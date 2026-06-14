@@ -1,57 +1,676 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>EasyKiosk — Static Dashboard</title>
-    <style>
-      :root{--bg:#f7fafc;--card:#fff;--muted:#6b7280}
-      body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:0;background:var(--bg);color:#111}
-      .container{max-width:1100px;margin:28px auto;padding:16px}
-      h1{margin:0 0 12px}
-      .cards{display:flex;gap:12px;margin-bottom:18px}
-      .card{background:var(--card);border:1px solid #e5e7eb;padding:14px;border-radius:8px;flex:1;box-shadow:0 1px 2px rgba(0,0,0,0.03)}
-      .card small{color:var(--muted)}
-      table{width:100%;border-collapse:collapse;background:var(--card);border-radius:6px;overflow:hidden}
-      th,td{padding:10px 12px;text-align:left;border-bottom:1px solid #eef2f7}
-      thead th{background:#f3f4f6;color:#111;font-weight:600}
-    </style>
-  </head>
-  <body>
-    <div class="container">
-      <h1>Prototype Dashboard</h1>
 
-      <div class="cards" id="summary"></div>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);font-size:14px;color:var(--color-text-primary)}
+.app{display:flex;height:100vh;min-height:600px;background:var(--color-background-tertiary)}
+.sidebar{width:200px;flex-shrink:0;background:var(--color-background-primary);border-right:0.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;padding:16px 0}
+.logo{padding:0 16px 20px;font-size:16px;font-weight:500;color:var(--color-text-primary);border-bottom:0.5px solid var(--color-border-tertiary);margin-bottom:8px}
+.logo span{color:#1D9E75}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;color:var(--color-text-secondary);font-size:13px;border-left:2px solid transparent;transition:all .15s}
+.nav-item:hover{background:var(--color-background-secondary);color:var(--color-text-primary)}
+.nav-item.active{background:var(--color-background-secondary);color:#0F6E56;border-left-color:#1D9E75;font-weight:500}
+.nav-item i{font-size:16px}
+.main{flex:1;overflow:auto;display:flex;flex-direction:column}
+.topbar{background:var(--color-background-primary);border-bottom:0.5px solid var(--color-border-tertiary);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:500}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:transparent;cursor:pointer;font-size:13px;color:var(--color-text-primary);font-family:var(--font-sans)}
+.btn:hover{background:var(--color-background-secondary)}
+.btn-primary{background:#1D9E75;color:#fff;border-color:#1D9E75}
+.btn-primary:hover{background:#0F6E56;border-color:#0F6E56}
+.btn-danger{background:#E24B4A;color:#fff;border-color:#E24B4A}
+.btn-danger:hover{background:#A32D2D}
+.content{padding:20px;flex:1}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px}
+.metric{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:6px}
+.metric-value{font-size:22px;font-weight:500}
+.metric-sub{font-size:11px;color:var(--color-text-tertiary);margin-top:3px}
+.metric.alert .metric-value{color:#BA7517}
+.metric.danger .metric-value{color:#E24B4A}
+.metric.success .metric-value{color:#1D9E75}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:16px}
+.card-header{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:0.5px solid var(--color-border-tertiary)}
+.card-title{font-size:13px;font-weight:500}
+.table{width:100%;border-collapse:collapse;font-size:13px}
+.table th{text-align:left;padding:9px 16px;color:var(--color-text-secondary);font-weight:400;font-size:12px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)}
+.table td{padding:10px 16px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:middle}
+.table tr:last-child td{border-bottom:none}
+.table tr:hover td{background:var(--color-background-secondary)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.badge-success{background:#EAF3DE;color:#3B6D11}
+.badge-warning{background:#FAEEDA;color:#854F0B}
+.badge-danger{background:#FCEBEB;color:#A32D2D}
+.badge-info{background:#E6F1FB;color:#185FA5}
+.badge-gray{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.search-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.search-bar input{flex:1;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 10px;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)}
+.search-bar select{border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:7px 10px;font-size:13px;background:var(--color-background-secondary);color:var(--color-text-primary);font-family:var(--font-sans)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:100;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal{background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);width:440px;max-width:95vw;max-height:85vh;overflow:auto}
+.modal-header{padding:16px 20px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between;font-size:14px;font-weight:500}
+.modal-body{padding:20px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:5px;display:block}
+.form-input{width:100%;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:13px;background:var(--color-background-primary);color:var(--color-text-primary);font-family:var(--font-sans)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-footer{padding:12px 20px;border-top:0.5px solid var(--color-border-tertiary);display:flex;justify-content:flex-end;gap:8px}
+.alert-banner{background:#FAEEDA;border:0.5px solid #FAC775;border-radius:var(--border-radius-md);padding:10px 14px;display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;color:#633806}
+.chart-wrap{position:relative;height:200px;padding:16px}
+.empty{padding:40px;text-align:center;color:var(--color-text-tertiary);font-size:13px}
+.tab-bar{display:flex;gap:2px;padding:12px 16px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.tab{padding:6px 14px;border-radius:var(--border-radius-md);cursor:pointer;font-size:13px;color:var(--color-text-secondary);border:none;background:none;font-family:var(--font-sans)}
+.tab.active{background:#E1F5EE;color:#0F6E56;font-weight:500}
+.stock-bar{height:6px;border-radius:3px;background:var(--color-border-tertiary);overflow:hidden;width:80px;display:inline-block;vertical-align:middle}
+.stock-fill{height:100%;border-radius:3px}
+.actions{display:flex;gap:6px}
+</style>
 
-      <h2>Recent Orders</h2>
-      <table id="orders">
-        <thead><tr><th>ID</th><th>Customer</th><th>Total</th></tr></thead>
-        <tbody></tbody>
-      </table>
+<h2 class="sr-only">EasyKiosk Inventory Management System — full featured dashboard with products, sales, categories, and supplier management</h2>
+
+<div class="app">
+  <div class="sidebar">
+    <div class="logo">Easy<span>Kiosk</span></div>
+    <div class="nav-item active" onclick="nav('dashboard')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i>Dashboard</div>
+    <div class="nav-item" onclick="nav('products')"><i class="ti ti-package" aria-hidden="true"></i>Products</div>
+    <div class="nav-item" onclick="nav('stock')"><i class="ti ti-arrows-exchange" aria-hidden="true"></i>Stock movements</div>
+    <div class="nav-item" onclick="nav('sales')"><i class="ti ti-receipt" aria-hidden="true"></i>Sales</div>
+    <div class="nav-item" onclick="nav('categories')"><i class="ti ti-tag" aria-hidden="true"></i>Categories</div>
+    <div class="nav-item" onclick="nav('suppliers')"><i class="ti ti-truck" aria-hidden="true"></i>Suppliers</div>
+    <div class="nav-item" onclick="nav('alerts')"><i class="ti ti-bell" aria-hidden="true"></i>Low stock alerts</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div id="topbar-action"></div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-bg" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modal-title">Add product</span>
+      <button class="btn" onclick="closeModal('product-modal')" style="padding:4px 8px;"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Product name</label><input class="form-input" id="f-name" placeholder="e.g. Coca-Cola 500ml"></div>
+        <div class="form-group"><label class="form-label">SKU</label><input class="form-input" id="f-sku" placeholder="e.g. BEV-001"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Category</label>
+          <select class="form-input" id="f-cat">
+            <option value="">Select category</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Supplier</label>
+          <select class="form-input" id="f-supplier">
+            <option value="">Select supplier</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Selling price (KES)</label><input class="form-input" id="f-price" type="number" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Cost price (KES)</label><input class="form-input" id="f-cost" type="number" placeholder="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Current stock</label><input class="form-input" id="f-stock" type="number" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Low stock threshold</label><input class="form-input" id="f-threshold" type="number" placeholder="10"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Unit</label>
+        <select class="form-input" id="f-unit"><option>pcs</option><option>kg</option><option>litre</option><option>pack</option><option>box</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('product-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Stock Modal -->
+<div class="modal-bg" id="stock-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="stock-modal-title">Record stock movement</span>
+      <button class="btn" onclick="closeModal('stock-modal')" style="padding:4px 8px;"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Product</label>
+        <select class="form-input" id="sm-product"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Type</label>
+          <select class="form-input" id="sm-type">
+            <option value="in">Stock in</option>
+            <option value="out">Stock out</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="sm-qty" type="number" placeholder="0"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Note (optional)</label><input class="form-input" id="sm-note" placeholder="e.g. Received from supplier"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('stock-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStockMove()">Record movement</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sale Modal -->
+<div class="modal-bg" id="sale-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span>Record sale</span>
+      <button class="btn" onclick="closeModal('sale-modal')" style="padding:4px 8px;"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Product</label>
+        <select class="form-input" id="sale-product" onchange="updateSalePrice()"></select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" id="sale-qty" type="number" placeholder="1" value="1" oninput="updateSalePrice()"></div>
+        <div class="form-group"><label class="form-label">Unit price (KES)</label><input class="form-input" id="sale-price" type="number"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Customer (optional)</label><input class="form-input" id="sale-customer" placeholder="Walk-in"></div>
+      <div style="background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 14px;font-size:13px;margin-top:4px">
+        Total: <strong id="sale-total" style="color:#1D9E75">KES 0</strong>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('sale-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSale()">Record sale</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal-bg" id="cat-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="cat-modal-title">Add category</span>
+      <button class="btn" onclick="closeModal('cat-modal')" style="padding:4px 8px;"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group"><label class="form-label">Category name</label><input class="form-input" id="cat-name" placeholder="e.g. Beverages"></div>
+      <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="cat-desc" placeholder="Optional description"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('cat-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCat()">Save category</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supplier Modal -->
+<div class="modal-bg" id="sup-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="sup-modal-title">Add supplier</span>
+      <button class="btn" onclick="closeModal('sup-modal')" style="padding:4px 8px;"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Supplier name</label><input class="form-input" id="sup-name" placeholder="Company name"></div>
+        <div class="form-group"><label class="form-label">Contact person</label><input class="form-input" id="sup-contact" placeholder="Name"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="sup-phone" placeholder="+254..."></div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" id="sup-email" placeholder="email@supplier.com"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Address</label><input class="form-input" id="sup-addr" placeholder="Nairobi, Kenya"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('sup-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSupplier()">Save supplier</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let state = {
+  products: [
+    {id:1,name:'Coca-Cola 500ml',sku:'BEV-001',catId:1,supplierId:1,price:50,cost:30,stock:45,threshold:10,unit:'pcs'},
+    {id:2,name:'Mineral Water 1L',sku:'BEV-002',catId:1,supplierId:1,price:30,cost:18,stock:8,threshold:15,unit:'pcs'},
+    {id:3,name:'Bread Loaf',sku:'BAK-001',catId:2,supplierId:2,price:60,cost:40,stock:20,threshold:10,unit:'pcs'},
+    {id:4,name:'Milk 500ml',sku:'DAI-001',catId:3,supplierId:3,price:55,cost:40,stock:5,threshold:12,unit:'pcs'},
+    {id:5,name:'Sugar 1kg',sku:'GRO-001',catId:4,supplierId:2,price:130,cost:100,stock:30,threshold:5,unit:'kg'},
+    {id:6,name:'Laundry Soap',sku:'HHG-001',catId:5,supplierId:4,price:45,cost:28,stock:3,threshold:8,unit:'pcs'},
+  ],
+  categories: [
+    {id:1,name:'Beverages',desc:'Drinks and water'},
+    {id:2,name:'Bakery',desc:'Bread and baked goods'},
+    {id:3,name:'Dairy',desc:'Milk and dairy products'},
+    {id:4,name:'Groceries',desc:'Dry goods and staples'},
+    {id:5,name:'Household',desc:'Cleaning and home items'},
+  ],
+  suppliers: [
+    {id:1,name:'Nairobi Beverages Ltd',contact:'James Kamau',phone:'+254 712 345678',email:'james@nbl.co.ke',addr:'Industrial Area, Nairobi'},
+    {id:2,name:'Unga Group',contact:'Sarah Wanjiku',phone:'+254 723 456789',email:'sarah@ungagroup.com',addr:'Ruaraka, Nairobi'},
+    {id:3,name:'Brookside Dairy',contact:'Peter Njoroge',phone:'+254 734 567890',email:'peter@brookside.co.ke',addr:'Ruiru, Kiambu'},
+    {id:4,name:'Bidco Africa',contact:'Ann Muthoni',phone:'+254 745 678901',email:'ann@bidco.co.ke',addr:'Thika Road, Nairobi'},
+  ],
+  stockMoves: [
+    {id:1,productId:1,type:'in',qty:50,note:'Opening stock',date:'2025-06-01'},
+    {id:2,productId:2,type:'in',qty:20,note:'Received from supplier',date:'2025-06-02'},
+    {id:3,productId:1,type:'out',qty:5,note:'Sold',date:'2025-06-10'},
+    {id:4,productId:3,type:'in',qty:30,note:'New batch',date:'2025-06-10'},
+    {id:5,productId:4,type:'in',qty:15,note:'Daily delivery',date:'2025-06-12'},
+    {id:6,productId:4,type:'out',qty:10,note:'Sold',date:'2025-06-13'},
+  ],
+  sales: [
+    {id:1,productId:1,qty:5,price:50,customer:'Walk-in',date:'2025-06-10',total:250},
+    {id:2,productId:3,qty:2,price:60,customer:'Mary Njeri',date:'2025-06-11',total:120},
+    {id:3,productId:5,qty:3,price:130,customer:'Walk-in',date:'2025-06-12',total:390},
+    {id:4,productId:2,qty:4,price:30,customer:'John Otieno',date:'2025-06-13',total:120},
+    {id:5,productId:4,qty:2,price:55,customer:'Walk-in',date:'2025-06-13',total:110},
+  ],
+  currentPage: 'dashboard',
+  editingProductId: null,
+  editingCatId: null,
+  editingSupplierId: null,
+  filterCat: '',
+  searchQ: '',
+  salesChartInstance: null,
+};
+
+let nextId = {product:7,cat:6,supplier:5,stockMove:7,sale:6};
+
+function nav(page){
+  state.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{if(n.getAttribute('onclick')===`nav('${page}')`){n.classList.add('active')}});
+  document.getElementById('page-title').textContent = {dashboard:'Dashboard',products:'Products',stock:'Stock movements',sales:'Sales',categories:'Categories',suppliers:'Suppliers',alerts:'Low stock alerts'}[page];
+  render(page);
+}
+
+function render(page){
+  const c = document.getElementById('content');
+  const ta = document.getElementById('topbar-action');
+  ta.innerHTML = '';
+  if(page==='dashboard') renderDashboard(c,ta);
+  else if(page==='products') renderProducts(c,ta);
+  else if(page==='stock') renderStock(c,ta);
+  else if(page==='sales') renderSales(c,ta);
+  else if(page==='categories') renderCategories(c,ta);
+  else if(page==='suppliers') renderSuppliers(c,ta);
+  else if(page==='alerts') renderAlerts(c,ta);
+}
+
+function totalSalesValue(){return state.sales.reduce((a,s)=>a+s.total,0);}
+function totalStockValue(){return state.products.reduce((a,p)=>a+p.stock*p.cost,0);}
+function lowStockItems(){return state.products.filter(p=>p.stock<=p.threshold);}
+
+function renderDashboard(c,ta){
+  const ls = lowStockItems();
+  const todaySales = state.sales.filter(s=>s.date==='2025-06-13').reduce((a,s)=>a+s.total,0);
+  const totalRevenue = totalSalesValue();
+  const grossProfit = state.sales.reduce((a,s)=>{const p=state.products.find(x=>x.id===s.productId);return a+(p?(s.price-p.cost)*s.qty:0)},0);
+  
+  c.innerHTML = `
+    ${ls.length?`<div class="alert-banner"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${ls.length} product${ls.length>1?'s':''} running low on stock — <a href="#" onclick="nav('alerts');return false" style="color:#633806;font-weight:500">View alerts</a></div>`:''}
+    <div class="metrics">
+      <div class="metric success"><div class="metric-label">Total revenue</div><div class="metric-value">KES ${totalRevenue.toLocaleString()}</div><div class="metric-sub">${state.sales.length} sales recorded</div></div>
+      <div class="metric"><div class="metric-label">Gross profit</div><div class="metric-value">KES ${grossProfit.toLocaleString()}</div><div class="metric-sub">${Math.round(grossProfit/totalRevenue*100)||0}% margin</div></div>
+      <div class="metric"><div class="metric-label">Stock value</div><div class="metric-value">KES ${Math.round(totalStockValue()).toLocaleString()}</div><div class="metric-sub">${state.products.length} products</div></div>
+      <div class="metric ${ls.length>0?'alert':''}"><div class="metric-label">Low stock alerts</div><div class="metric-value">${ls.length}</div><div class="metric-sub">items below threshold</div></div>
     </div>
 
-    <script>
-      // sample data for static preview
-      const summary = { users: 12, orders: 34, revenue: 1284.5 };
-      const recent = [
-        { id: 101, customer: 'Alice', total: 19.99 },
-        { id: 102, customer: 'Bob', total: 45.5 },
-        { id: 103, customer: 'Carol', total: 12.0 }
-      ];
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Recent sales</span></div>
+        <table class="table">
+          <thead><tr><th>Product</th><th>Qty</th><th>Total</th><th>Date</th></tr></thead>
+          <tbody>
+            ${state.sales.slice(-5).reverse().map(s=>{
+              const p=state.products.find(x=>x.id===s.productId);
+              return `<tr><td>${p?p.name:'—'}</td><td>${s.qty}</td><td>KES ${s.total.toLocaleString()}</td><td style="color:var(--color-text-secondary)">${s.date}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Stock levels</span></div>
+        <table class="table">
+          <thead><tr><th>Product</th><th>Stock</th><th>Status</th></tr></thead>
+          <tbody>
+            ${state.products.map(p=>{
+              const pct=Math.min(100,Math.round(p.stock/(p.threshold*2)*100));
+              const status=p.stock<=p.threshold?'<span class="badge badge-danger">Low</span>':p.stock<=p.threshold*1.5?'<span class="badge badge-warning">Watch</span>':'<span class="badge badge-success">OK</span>';
+              const color=p.stock<=p.threshold?'#E24B4A':p.stock<=p.threshold*1.5?'#EF9F27':'#1D9E75';
+              return `<tr><td>${p.name}</td><td>${p.stock} ${p.unit} <span class="stock-bar"><span class="stock-fill" style="width:${pct}%;background:${color}"></span></span></td><td>${status}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
 
-      const sumEl = document.getElementById('summary');
-      for (const [k,v] of Object.entries(summary)){
-        const div = document.createElement('div'); div.className='card';
-        div.innerHTML = `<small>${k.toUpperCase()}</small><div style="font-size:20px;margin-top:6px">${k==='revenue' ? '$'+v.toFixed(2) : v}</div>`;
-        sumEl.appendChild(div);
-      }
+  setTimeout(()=>{
+    const canvas = document.createElement('canvas');
+    canvas.setAttribute('role','img');
+    canvas.setAttribute('aria-label','Bar chart showing revenue by product from recorded sales');
+    const wrap = document.createElement('div');
+    wrap.style.cssText='position:relative;height:200px;margin-top:16px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:16px';
+    const title = document.createElement('div');
+    title.style.cssText='font-size:13px;font-weight:500;margin-bottom:12px';
+    title.textContent='Revenue by product';
+    wrap.appendChild(title);
+    const chartWrap=document.createElement('div');
+    chartWrap.style.cssText='position:relative;height:150px';
+    chartWrap.appendChild(canvas);
+    wrap.appendChild(chartWrap);
+    c.appendChild(wrap);
+    const productRevs={};
+    state.sales.forEach(s=>{const p=state.products.find(x=>x.id===s.productId);if(p)productRevs[p.name]=(productRevs[p.name]||0)+s.total;});
+    const labels=Object.keys(productRevs);const data=Object.values(productRevs);
+    if(state.salesChartInstance)state.salesChartInstance.destroy();
+    state.salesChartInstance=new Chart(canvas,{type:'bar',data:{labels,datasets:[{label:'Revenue (KES)',data,backgroundColor:'#5DCAA5',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>'KES '+v.toLocaleString(),font:{size:11}},grid:{color:'rgba(0,0,0,.06)'}},x:{ticks:{font:{size:11}},grid:{display:false}}}}});
+  },100);
+}
 
-      const tbody = document.querySelector('#orders tbody');
-      for (const r of recent){
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${r.id}</td><td>${r.customer}</td><td>$${r.total.toFixed(2)}</td>`;
-        tbody.appendChild(tr);
-      }
-    </script>
-  </body>
-</html>
+function getCatName(id){const c=state.categories.find(x=>x.id===id);return c?c.name:'—';}
+function getSupName(id){const s=state.suppliers.find(x=>x.id===id);return s?s.name:'—';}
+
+function renderProducts(c,ta){
+  ta.innerHTML=`<button class="btn btn-primary" onclick="openAddProduct()"><i class="ti ti-plus" aria-hidden="true"></i> Add product</button>`;
+  const filtered=state.products.filter(p=>{
+    const q=state.searchQ.toLowerCase();
+    return(!q||p.name.toLowerCase().includes(q)||p.sku.toLowerCase().includes(q))&&(!state.filterCat||p.catId===parseInt(state.filterCat));
+  });
+  c.innerHTML=`
+    <div class="card">
+      <div class="search-bar">
+        <i class="ti ti-search" style="color:var(--color-text-secondary)" aria-hidden="true"></i>
+        <input placeholder="Search products…" value="${state.searchQ}" oninput="state.searchQ=this.value;renderProducts(document.getElementById('content'),document.getElementById('topbar-action'))">
+        <select onchange="state.filterCat=this.value;renderProducts(document.getElementById('content'),document.getElementById('topbar-action'))">
+          <option value="">All categories</option>
+          ${state.categories.map(cat=>`<option value="${cat.id}" ${state.filterCat==cat.id?'selected':''}>${cat.name}</option>`).join('')}
+        </select>
+      </div>
+      <table class="table">
+        <thead><tr><th>Product</th><th>SKU</th><th>Category</th><th>Stock</th><th>Price</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${filtered.length===0?`<tr><td colspan="7"><div class="empty">No products found</div></td></tr>`:''}
+          ${filtered.map(p=>{
+            const low=p.stock<=p.threshold;
+            const status=low?'<span class="badge badge-danger">Low stock</span>':'<span class="badge badge-success">In stock</span>';
+            return `<tr>
+              <td><strong style="font-weight:500">${p.name}</strong><br><span style="font-size:11px;color:var(--color-text-tertiary)">${getSupName(p.supplierId)}</span></td>
+              <td style="color:var(--color-text-secondary)">${p.sku}</td>
+              <td><span class="badge badge-info">${getCatName(p.catId)}</span></td>
+              <td>${p.stock} ${p.unit}</td>
+              <td>KES ${p.price}</td>
+              <td>${status}</td>
+              <td><div class="actions">
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditProduct(${p.id})"><i class="ti ti-edit"></i></button>
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="deleteProduct(${p.id})"><i class="ti ti-trash"></i></button>
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function openAddProduct(){
+  state.editingProductId=null;
+  document.getElementById('modal-title').textContent='Add product';
+  ['f-name','f-sku','f-price','f-cost','f-stock','f-threshold'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-unit').value='pcs';
+  populateCatSelect('f-cat',null);
+  populateSupSelect('f-supplier',null);
+  openModal('product-modal');
+}
+function openEditProduct(id){
+  const p=state.products.find(x=>x.id===id);
+  state.editingProductId=id;
+  document.getElementById('modal-title').textContent='Edit product';
+  document.getElementById('f-name').value=p.name;
+  document.getElementById('f-sku').value=p.sku;
+  document.getElementById('f-price').value=p.price;
+  document.getElementById('f-cost').value=p.cost;
+  document.getElementById('f-stock').value=p.stock;
+  document.getElementById('f-threshold').value=p.threshold;
+  document.getElementById('f-unit').value=p.unit;
+  populateCatSelect('f-cat',p.catId);
+  populateSupSelect('f-supplier',p.supplierId);
+  openModal('product-modal');
+}
+function saveProduct(){
+  const name=document.getElementById('f-name').value.trim();
+  if(!name)return;
+  const data={name,sku:document.getElementById('f-sku').value.trim(),catId:parseInt(document.getElementById('f-cat').value)||null,supplierId:parseInt(document.getElementById('f-supplier').value)||null,price:parseFloat(document.getElementById('f-price').value)||0,cost:parseFloat(document.getElementById('f-cost').value)||0,stock:parseInt(document.getElementById('f-stock').value)||0,threshold:parseInt(document.getElementById('f-threshold').value)||10,unit:document.getElementById('f-unit').value};
+  if(state.editingProductId){Object.assign(state.products.find(x=>x.id===state.editingProductId),data);}
+  else{state.products.push({id:nextId.product++,...data});}
+  closeModal('product-modal');render('products');
+}
+function deleteProduct(id){
+  if(confirm('Delete this product?')){state.products=state.products.filter(x=>x.id!==id);render('products');}
+}
+
+function populateCatSelect(elId, selectedId){
+  const el=document.getElementById(elId);
+  el.innerHTML='<option value="">Select category</option>'+state.categories.map(c=>`<option value="${c.id}" ${c.id===selectedId?'selected':''}>${c.name}</option>`).join('');
+}
+function populateSupSelect(elId, selectedId){
+  const el=document.getElementById(elId);
+  el.innerHTML='<option value="">Select supplier</option>'+state.suppliers.map(s=>`<option value="${s.id}" ${s.id===selectedId?'selected':''}>${s.name}</option>`).join('');
+}
+
+function renderStock(c,ta){
+  ta.innerHTML=`<button class="btn btn-primary" onclick="openStockMove()"><i class="ti ti-arrows-exchange" aria-hidden="true"></i> Record movement</button>`;
+  c.innerHTML=`
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Date</th><th>Product</th><th>Type</th><th>Quantity</th><th>Note</th></tr></thead>
+        <tbody>
+          ${state.stockMoves.slice().reverse().map(m=>{
+            const p=state.products.find(x=>x.id===m.productId);
+            return `<tr>
+              <td style="color:var(--color-text-secondary)">${m.date}</td>
+              <td>${p?p.name:'—'}</td>
+              <td>${m.type==='in'?'<span class="badge badge-success"><i class="ti ti-arrow-down" style="font-size:11px"></i> Stock in</span>':'<span class="badge badge-danger"><i class="ti ti-arrow-up" style="font-size:11px"></i> Stock out</span>'}</td>
+              <td>${m.qty} ${p?p.unit:''}</td>
+              <td style="color:var(--color-text-secondary)">${m.note||'—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function openStockMove(){
+  const sel=document.getElementById('sm-product');
+  sel.innerHTML=state.products.map(p=>`<option value="${p.id}">${p.name} (${p.stock} ${p.unit})</option>`).join('');
+  document.getElementById('sm-qty').value='';
+  document.getElementById('sm-note').value='';
+  openModal('stock-modal');
+}
+function saveStockMove(){
+  const productId=parseInt(document.getElementById('sm-product').value);
+  const type=document.getElementById('sm-type').value;
+  const qty=parseInt(document.getElementById('sm-qty').value)||0;
+  const note=document.getElementById('sm-note').value.trim();
+  if(!qty)return;
+  const p=state.products.find(x=>x.id===productId);
+  if(type==='in')p.stock+=qty;
+  else{if(p.stock<qty){alert('Insufficient stock!');return;}p.stock-=qty;}
+  state.stockMoves.push({id:nextId.stockMove++,productId,type,qty,note,date:new Date().toISOString().split('T')[0]});
+  closeModal('stock-modal');render('stock');
+}
+
+function renderSales(c,ta){
+  ta.innerHTML=`<button class="btn btn-primary" onclick="openSale()"><i class="ti ti-plus" aria-hidden="true"></i> Record sale</button>`;
+  const totalRev=totalSalesValue();
+  const totalProfit=state.sales.reduce((a,s)=>{const p=state.products.find(x=>x.id===s.productId);return a+(p?(s.price-p.cost)*s.qty:0)},0);
+  c.innerHTML=`
+    <div class="metrics" style="margin-bottom:16px">
+      <div class="metric success"><div class="metric-label">Total revenue</div><div class="metric-value">KES ${totalRev.toLocaleString()}</div></div>
+      <div class="metric"><div class="metric-label">Gross profit</div><div class="metric-value">KES ${totalProfit.toLocaleString()}</div></div>
+      <div class="metric"><div class="metric-label">Transactions</div><div class="metric-value">${state.sales.length}</div></div>
+    </div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Date</th><th>Product</th><th>Customer</th><th>Qty</th><th>Unit price</th><th>Total</th></tr></thead>
+        <tbody>
+          ${state.sales.slice().reverse().map(s=>{
+            const p=state.products.find(x=>x.id===s.productId);
+            return `<tr>
+              <td style="color:var(--color-text-secondary)">${s.date}</td>
+              <td>${p?p.name:'—'}</td>
+              <td>${s.customer||'Walk-in'}</td>
+              <td>${s.qty}</td>
+              <td>KES ${s.price}</td>
+              <td><strong style="font-weight:500">KES ${s.total.toLocaleString()}</strong></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function openSale(){
+  const sel=document.getElementById('sale-product');
+  sel.innerHTML=state.products.map(p=>`<option value="${p.id}" data-price="${p.price}">${p.name}</option>`).join('');
+  document.getElementById('sale-qty').value='1';
+  document.getElementById('sale-customer').value='';
+  updateSalePrice();
+  openModal('sale-modal');
+}
+function updateSalePrice(){
+  const sel=document.getElementById('sale-product');
+  const opt=sel.options[sel.selectedIndex];
+  if(opt){document.getElementById('sale-price').value=opt.dataset.price;}
+  const qty=parseInt(document.getElementById('sale-qty').value)||0;
+  const price=parseFloat(document.getElementById('sale-price').value)||0;
+  document.getElementById('sale-total').textContent='KES '+(qty*price).toLocaleString();
+}
+function saveSale(){
+  const productId=parseInt(document.getElementById('sale-product').value);
+  const qty=parseInt(document.getElementById('sale-qty').value)||0;
+  const price=parseFloat(document.getElementById('sale-price').value)||0;
+  const customer=document.getElementById('sale-customer').value.trim()||'Walk-in';
+  if(!qty||!price)return;
+  const p=state.products.find(x=>x.id===productId);
+  if(p.stock<qty){alert('Insufficient stock!');return;}
+  p.stock-=qty;
+  state.sales.push({id:nextId.sale++,productId,qty,price,customer,date:new Date().toISOString().split('T')[0],total:qty*price});
+  state.stockMoves.push({id:nextId.stockMove++,productId,type:'out',qty,note:'Sale to '+customer,date:new Date().toISOString().split('T')[0]});
+  closeModal('sale-modal');render('sales');
+}
+
+function renderCategories(c,ta){
+  ta.innerHTML=`<button class="btn btn-primary" onclick="openAddCat()"><i class="ti ti-plus" aria-hidden="true"></i> Add category</button>`;
+  c.innerHTML=`
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Category</th><th>Description</th><th>Products</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${state.categories.map(cat=>{
+            const count=state.products.filter(p=>p.catId===cat.id).length;
+            return `<tr>
+              <td><strong style="font-weight:500">${cat.name}</strong></td>
+              <td style="color:var(--color-text-secondary)">${cat.desc||'—'}</td>
+              <td><span class="badge badge-gray">${count} product${count!==1?'s':''}</span></td>
+              <td><div class="actions">
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditCat(${cat.id})"><i class="ti ti-edit"></i></button>
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="deleteCat(${cat.id})"><i class="ti ti-trash"></i></button>
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function openAddCat(){state.editingCatId=null;document.getElementById('cat-modal-title').textContent='Add category';document.getElementById('cat-name').value='';document.getElementById('cat-desc').value='';openModal('cat-modal');}
+function openEditCat(id){const cat=state.categories.find(x=>x.id===id);state.editingCatId=id;document.getElementById('cat-modal-title').textContent='Edit category';document.getElementById('cat-name').value=cat.name;document.getElementById('cat-desc').value=cat.desc;openModal('cat-modal');}
+function saveCat(){
+  const name=document.getElementById('cat-name').value.trim();if(!name)return;
+  const data={name,desc:document.getElementById('cat-desc').value.trim()};
+  if(state.editingCatId){Object.assign(state.categories.find(x=>x.id===state.editingCatId),data);}
+  else{state.categories.push({id:nextId.cat++,...data});}
+  closeModal('cat-modal');render('categories');
+}
+function deleteCat(id){
+  const count=state.products.filter(p=>p.catId===id).length;
+  if(count>0&&!confirm(`This category has ${count} product(s). Delete anyway?`))return;
+  state.categories=state.categories.filter(x=>x.id!==id);render('categories');
+}
+
+function renderSuppliers(c,ta){
+  ta.innerHTML=`<button class="btn btn-primary" onclick="openAddSup()"><i class="ti ti-plus" aria-hidden="true"></i> Add supplier</button>`;
+  c.innerHTML=`
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Supplier</th><th>Contact</th><th>Phone</th><th>Email</th><th>Products</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${state.suppliers.map(s=>{
+            const count=state.products.filter(p=>p.supplierId===s.id).length;
+            return `<tr>
+              <td><strong style="font-weight:500">${s.name}</strong><br><span style="font-size:11px;color:var(--color-text-tertiary)">${s.addr}</span></td>
+              <td>${s.contact}</td>
+              <td style="color:var(--color-text-secondary)">${s.phone}</td>
+              <td style="color:var(--color-text-secondary)">${s.email}</td>
+              <td><span class="badge badge-gray">${count}</span></td>
+              <td><div class="actions">
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="openEditSup(${s.id})"><i class="ti ti-edit"></i></button>
+                <button class="btn" style="padding:4px 8px;font-size:12px" onclick="deleteSup(${s.id})"><i class="ti ti-trash"></i></button>
+              </div></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+function openAddSup(){state.editingSupplierId=null;document.getElementById('sup-modal-title').textContent='Add supplier';['sup-name','sup-contact','sup-phone','sup-email','sup-addr'].forEach(id=>document.getElementById(id).value='');openModal('sup-modal');}
+function openEditSup(id){const s=state.suppliers.find(x=>x.id===id);state.editingSupplierId=id;document.getElementById('sup-modal-title').textContent='Edit supplier';document.getElementById('sup-name').value=s.name;document.getElementById('sup-contact').value=s.contact;document.getElementById('sup-phone').value=s.phone;document.getElementById('sup-email').value=s.email;document.getElementById('sup-addr').value=s.addr;openModal('sup-modal');}
+function saveSupplier(){
+  const name=document.getElementById('sup-name').value.trim();if(!name)return;
+  const data={name,contact:document.getElementById('sup-contact').value.trim(),phone:document.getElementById('sup-phone').value.trim(),email:document.getElementById('sup-email').value.trim(),addr:document.getElementById('sup-addr').value.trim()};
+  if(state.editingSupplierId){Object.assign(state.suppliers.find(x=>x.id===state.editingSupplierId),data);}
+  else{state.suppliers.push({id:nextId.supplier++,...data});}
+  closeModal('sup-modal');render('suppliers');
+}
+function deleteSup(id){if(confirm('Delete this supplier?')){state.suppliers=state.suppliers.filter(x=>x.id!==id);render('suppliers');}}
+
+function renderAlerts(c,ta){
+  ta.innerHTML=`<button class="btn btn-primary" onclick="openStockMove()"><i class="ti ti-arrows-exchange" aria-hidden="true"></i> Restock</button>`;
+  const ls=lowStockItems();
+  c.innerHTML=`
+    ${ls.length===0?`<div class="empty" style="padding:60px"><i class="ti ti-circle-check" style="font-size:40px;color:#1D9E75;display:block;margin-bottom:12px"></i>All products are well-stocked</div>`:`
+    <div class="alert-banner"><i class="ti ti-alert-triangle" aria-hidden="true"></i>${ls.length} product${ls.length!==1?'s':''} need restocking</div>
+    <div class="card">
+      <table class="table">
+        <thead><tr><th>Product</th><th>Category</th><th>Supplier</th><th>Current stock</th><th>Threshold</th><th>Deficit</th><th>Action</th></tr></thead>
+        <tbody>
+          ${ls.map(p=>`<tr>
+            <td><strong style="font-weight:500">${p.name}</strong><br><span style="font-size:11px;color:var(--color-text-tertiary)">${p.sku}</span></td>
+            <td><span class="badge badge-info">${getCatName(p.catId)}</span></td>
+            <td>${getSupName(p.supplierId)}</td>
+            <td><span style="color:#E24B4A;font-weight:500">${p.stock} ${p.unit}</span></td>
+            <td>${p.threshold} ${p.unit}</td>
+            <td><span class="badge badge-danger">-${p.threshold-p.stock} ${p.unit}</span></td>
+            <td><button class="btn" style="padding:4px 10px;font-size:12px" onclick="quickRestock(${p.id})"><i class="ti ti-arrows-exchange" style="font-size:13px"></i> Restock</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`}`;
+}
+function quickRestock(productId){
+  const sel=document.getElementById('sm-product');
+  sel.innerHTML=state.products.map(p=>`<option value="${p.id}" ${p.id===productId?'selected':''}>${p.name} (${p.stock} ${p.unit})</option>`).join('');
+  document.getElementById('sm-type').value='in';
+  document.getElementById('sm-qty').value='';
+  document.getElementById('sm-note').value='Restock';
+  openModal('stock-modal');
+}
+
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+
+render('dashboard');
+</script>
